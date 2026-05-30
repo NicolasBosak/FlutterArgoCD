@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: flutter-nginx
-        image: nicolasbosak/flutter-k8s-app:20c29c5ccb86f6f039daaaf484bfdc6343c447c2
+        image: nicolasbosak/flutter-k8s-app:4e3505a01e0f08ba27856e9cbf9711936a6a74f6
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
