@@ -5,7 +5,7 @@ metadata:
   labels:
     app: flutter-k8s-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: flutter-k8s-app
