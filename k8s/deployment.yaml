@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flutter-k8s-app
+  labels:
+    app: flutter-k8s-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flutter-k8s-app
+  template:
+    metadata:
+      labels:
+        app: flutter-k8s-app
+    spec:
+      containers:
+      - name: flutter-nginx
+        image: flutter-k8s-app:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"

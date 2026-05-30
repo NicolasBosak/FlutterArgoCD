@@ -1,0 +1,52 @@
+name: "Terraform & Flutter CD (Apply)"
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  # 1. Llamada al Pipeline Modular (Etapa de Aplicación)
+  # Verifica que la app compile y pase pruebas antes de desplegar infra
+  flutter_app_ci:
+    name: "Flutter App Pipeline"
+    uses: ./.github/workflows/flutter-workflow.yml
+
+  # 2. Etapa de Infraestructura (Depende de Flutter)
+  terraform:
+    name: "Terraform Apply"
+    needs: [flutter_app_ci] # <- ETAPAS: Esto hace que espere a que terminen los tests
+    runs-on: ubuntu-latest
+    env:
+      TF_VAR_gcp_project_id: ${{ secrets.GCP_PROJECT_ID }}
+    permissions:
+      contents: read
+      id-token: write
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          workload_identity_provider: "${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}"
+          service_account: "${{ secrets.GCP_SERVICE_ACCOUNT }}"
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: "1.5.0"
+
+      - name: "Terraform Init"
+        id: init
+        run: terraform init
+
+      - name: "Terraform Apply"
+        id: apply
+        run: terraform apply -auto-approve

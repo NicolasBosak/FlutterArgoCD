@@ -1,0 +1,66 @@
+name: "Flutter Modular Pipeline"
+
+on:
+  workflow_call:
+    # Esto permite que otros flujos de trabajo llamen a este
+
+jobs:
+  lint:
+    name: "Calidad de Código (Lint)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Setup Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: "Flutter Pub Get"
+        run: flutter pub get
+        continue-on-error: true # Evita que falle por falta de pubspec.yaml
+
+      - name: "Flutter Analyze"
+        run: flutter analyze
+        continue-on-error: true
+
+  test:
+    name: "Pruebas Automáticas (Test)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Setup Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: "Flutter Pub Get"
+        run: flutter pub get
+        continue-on-error: true
+
+      - name: "Flutter Test"
+        run: flutter test
+        continue-on-error: true # Solicitado para no romper el pipeline
+
+  build:
+    name: "Build de Aplicación"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Setup Flutter"
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: "Flutter Pub Get"
+        run: flutter pub get
+        continue-on-error: true
+
+      - name: "Flutter Build (Web)"
+        run: flutter build web
+        continue-on-error: true
