@@ -1,0 +1,54 @@
+name: "CD Pipeline (Docker + GitOps)"
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  # 1. Pipeline de Flutter (Lint, Test, Build web)
+  flutter_app_ci:
+    name: "Flutter CI"
+    uses: ./.github/workflows/flutter-workflow.yml
+
+  # 2. Construcción de Docker y GitOps (Depende de Flutter CI)
+  docker_and_gitops:
+    name: "Build Docker & Update Manifests"
+    needs: [flutter_app_ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Necesario para hacer commit de vuelta al repo
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v3
+
+      - name: "Log in to Docker Hub"
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: "Build and push Docker image"
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          # Reemplaza 'tu-usuario-docker' por el nombre de tu organización/usuario en Docker Hub
+          # Y ajustaremos el image name como corresponda, por ahora asumo 'DOCKER_USERNAME/flutter-k8s-app'
+          tags: ${{ secrets.DOCKER_USERNAME }}/flutter-k8s-app:${{ github.sha }}
+
+      - name: "Update Kubernetes deployment manifest"
+        run: |
+          # Reemplazar la etiqueta de la imagen en deployment.yaml
+          # Asume que el tag de la imagen empieza después de los :
+          sed -i 's|image: .*:.*|image: ${{ secrets.DOCKER_USERNAME }}/flutter-k8s-app:${{ github.sha }}|g' k8s/deployment.yaml
+
+      - name: "Commit and push changes"
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add k8s/deployment.yaml
+          # Solo hacer commit si hay cambios
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update image tag to ${{ github.sha }} [skip ci]" && git push)
